@@ -1,10 +1,9 @@
 # Bin2COEConverter
 Small C program to convert a bin file to COE; a format used by Xilinx to load memory contents.
-
-BIN to COE file converter
-Help message to run this program.
-  The program takes the following arguments:
-    --help    : prints this message.
+ 
+The program takes the following arguments:
+  
+    --help    : prints this message.    
     --version : prints the version.
     --file    : bin or hex file to be converted to coe file.
     --width   : data size is a multiple of 8 - set to 8 by default.
