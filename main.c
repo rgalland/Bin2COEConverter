@@ -40,22 +40,6 @@ void printVersion(void){
     exit(EXIT_FAILURE);
 }
 
-void writeByteToCOEFile(int * dataIndex, int * dataCounter, FILE * outputFile, int dataSize, int dataIn) {
-    if (*dataIndex == 0) {
-        if (*dataCounter == 0) {
-            fprintf(outputFile, "\n");
-        } else {
-            fprintf(outputFile, ",\n");
-        }
-    }
-    fprintf(outputFile, "%02x", dataIn);
-    *dataIndex = *dataIndex + 1;
-    if (*dataIndex >= dataSize) {
-        *dataIndex = 0;
-        *dataCounter = *dataCounter + 1;
-    }
-}
-
 /*
  * 
  */
@@ -69,13 +53,16 @@ int main(int argc, char** argv) {
     char * outputFilename = NULL;
     int fileSize = 0;
     int dataSize;
-    //char dataIn;
+    int dataIn; 
+    char dataInString[3];
+    char * dataInFullString;
     int dataIndex = 0;
     int dataCounter = 0;
     
 
 #ifdef DEBUG    
-    argc = 7;
+    /*
+    argc = 7;   // will ignore --out args
     argv[1] = "--file";
     argv[2] = "Cyber Core (USA).pce";
     argv[3] = "--width";
@@ -85,6 +72,18 @@ int main(int argc, char** argv) {
     
     argv[7] = "--out";
     argv[8] = "out.coe";
+    */
+    argc = 9;
+    argv[1] = "--file";
+    argv[2] = "Iria_144p.data.bin";
+    argv[3] = "--width";
+    argv[4] = "16";
+    argv[5] = "--depth";
+    argv[6] = "23040";      //  "23040" for width = 16
+    
+    argv[7] = "--out";
+    argv[8] = "out16.coe";
+    
 #endif
     
     if (argc > 1) {
@@ -96,7 +95,6 @@ int main(int argc, char** argv) {
             } else if (strcmp(argv[I],"--file" ) == 0) {
                 I++;
                 if (I < argc){
-                    printf("test\n");
                     inputFilename = argv[I];
                 }
             } else if (strcmp(argv[I],"--width" ) == 0) {
@@ -165,20 +163,41 @@ int main(int argc, char** argv) {
     // go back to file start
     fseek(inputFile, 0, SEEK_SET);
     // first write 2 top lines of COE file. Always use radix 16
-    fputs("memory_initialization_radix=16;\nmemory_initialization_vector=",outputFile);    
-    while (fileSize-- > 0) {
-        writeByteToCOEFile(&dataIndex, &dataCounter, outputFile, dataSize, fgetc(inputFile));
+    fputs("memory_initialization_radix=16;\nmemory_initialization_vector=\n",outputFile);    
+    // allocate memory to read values from binary as char strings based on data size, 2 chars per byte + 1 char for \0 
+    dataInFullString = malloc(dataSize * 2 + 1);
+    dataInFullString[dataSize * 2] = 0x00;  // end of string char at the end of array
+    
+    // parse each byte in binary file
+    while (fileSize > 0) {
+        for (int I = dataSize; I > 0; I--) {
+            // read next char in binary file and save to string array
+            dataIn = fgetc(inputFile);
+            snprintf(dataInString, 3, "%02x", dataIn);
+            memcpy(&dataInFullString[(I * 2) - 2], dataInString, 2); 
+            fileSize--;
+        }
+        fputs(dataInFullString, outputFile);
+        dataCounter++;
+        if (dataCounter < depth) {
+            fputs(",\n", outputFile);
+        }   
     }
-    // check dest file size and fill with zeros if needed to pad file
+    
+    // if depth not yet reached, pad file with 0's
     while (dataCounter < depth) {
-        writeByteToCOEFile(&dataIndex, &dataCounter, outputFile, dataSize, 0x00);
+        fputc('0', outputFile);   // no need to pad with extra zeros
+        dataCounter++;
+        if (dataCounter < depth) {
+            fputs(",\n", outputFile);
+        }
     }
-    fputc('\n',outputFile);        
-    printf("COE file created!\n\r");
+    
+    printf("COE file named %s created!\n\r", outputFilename);
     free(outputFilename);
+    free(dataInFullString);
     fclose(inputFile);
     fclose(outputFile);
        
     return (EXIT_SUCCESS);
 }
-
