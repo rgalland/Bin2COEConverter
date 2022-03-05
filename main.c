@@ -18,7 +18,7 @@
 //#define DEBUG
 
 #define MAJOR_ISSUE 1
-#define MINOR_ISSUE 0
+#define MINOR_ISSUE 1
 
 #define DATA_WIDTH 8
 
