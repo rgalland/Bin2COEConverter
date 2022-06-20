@@ -14,11 +14,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <X11/Xlib.h>
 
 //#define DEBUG
 
 #define MAJOR_ISSUE 1
-#define MINOR_ISSUE 1
+#define MINOR_ISSUE 0
 
 #define DATA_WIDTH 8
 
@@ -31,6 +32,7 @@ void printHelpMessage(void){
     printf("    --file    : bin or hex file to be converted to coe file.\n");
     printf("    --width   : data size is a multiple of 8 - set to 8 by default.\n");
     printf("    --depth   : Must be greater or equal to bin file size / ( width / 8 ) or set to that value by default.\n");
+    printf("    --big     : bin file is big endian instead of little endian by default; only applies to width > 8.\n");
     printf("    --out     : output file name other inputfile.coe is created.\n");
     exit(EXIT_FAILURE);
 }
@@ -53,11 +55,13 @@ int main(int argc, char** argv) {
     char * outputFilename = NULL;
     int fileSize = 0;
     int dataSize;
+    int charCnt;
     int dataIn; 
     char dataInString[3];
     char * dataInFullString;
     int dataIndex = 0;
     int dataCounter = 0;
+    int big = 0;
     
 
 #ifdef DEBUG    
@@ -69,20 +73,29 @@ int main(int argc, char** argv) {
     argv[4] = "8";
     argv[5] = "--depth";
     argv[6] = "393216";
-    
     argv[7] = "--out";
     argv[8] = "out.coe";
-    */
+    
     argc = 9;
     argv[1] = "--file";
     argv[2] = "Iria_144p.data.bin";
     argv[3] = "--width";
     argv[4] = "16";
     argv[5] = "--depth";
-    argv[6] = "23040";      //  "23040" for width = 16
-    
+    argv[6] = "23040";      //  "23040" for width = 16    
     argv[7] = "--out";
     argv[8] = "out16.coe";
+    */
+    argc = 10;
+    argv[1] = "--file";
+    argv[2] = "MC68000_test_all_opcodes.bin";
+    argv[3] = "--width";
+    argv[4] = "16";
+    argv[5] = "--depth";
+    argv[6] = "32768";          
+    argv[7] = "--big";      // file is big endian 
+    argv[8] = "--out";
+    argv[9] = "out16_bige.coe";
     
 #endif
     
@@ -113,6 +126,9 @@ int main(int argc, char** argv) {
                     outputFilename = malloc(strlen(argv[I]));
                     strcpy(outputFilename, argv[I]);
                 }                
+            } else if (strcmp(argv[I],"--big" ) == 0) {
+                I++;
+                big = 1;
             }
         }
     } else {
@@ -165,16 +181,22 @@ int main(int argc, char** argv) {
     // first write 2 top lines of COE file. Always use radix 16
     fputs("memory_initialization_radix=16;\nmemory_initialization_vector=\n",outputFile);    
     // allocate memory to read values from binary as char strings based on data size, 2 chars per byte + 1 char for \0 
-    dataInFullString = malloc(dataSize * 2 + 1);
-    dataInFullString[dataSize * 2] = 0x00;  // end of string char at the end of array
+    charCnt = dataSize * 2;    
+    dataInFullString = malloc(charCnt + 1);
+    dataInFullString[charCnt] = 0x00;  // end of string char at the end of array
     
     // parse each byte in binary file
     while (fileSize > 0) {
+        
         for (int I = dataSize; I > 0; I--) {
             // read next char in binary file and save to string array
             dataIn = fgetc(inputFile);
             snprintf(dataInString, 3, "%02x", dataIn);
-            memcpy(&dataInFullString[(I * 2) - 2], dataInString, 2); 
+            if (big == 1) {
+                memcpy(&dataInFullString[charCnt - (I * 2)], dataInString, 2); 
+            } else {
+                memcpy(&dataInFullString[(I * 2) - 2], dataInString, 2); 
+            }
             fileSize--;
         }
         fputs(dataInFullString, outputFile);
@@ -201,3 +223,4 @@ int main(int argc, char** argv) {
        
     return (EXIT_SUCCESS);
 }
+

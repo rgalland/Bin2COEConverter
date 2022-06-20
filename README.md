@@ -8,4 +8,5 @@ The program takes the following arguments:
     --file    : bin or hex file to be converted to coe file.
     --width   : data size is a multiple of 8 - set to 8 by default.
     --depth   : Must be greater or equal to bin file size / ( width / 8 ) or set to that value by default.
+    --big     : bin file is big endian instead of little endian by default; only applies to width > 8.
     --out     : output file name other inputfile.coe is created.
