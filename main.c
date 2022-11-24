@@ -16,7 +16,7 @@
 #include <string.h>
 #include <X11/Xlib.h>
 
-//#define DEBUG
+#define DEBUG
 
 #define MAJOR_ISSUE 1
 #define MINOR_ISSUE 0
@@ -47,6 +47,8 @@ void printVersion(void){
  */
 int main(int argc, char** argv) {
 
+    char** argvPtr;
+    
     FILE* inputFile;
     FILE* outputFile;
     int width = 0;
@@ -100,36 +102,28 @@ int main(int argc, char** argv) {
 #endif
     
     if (argc > 1) {
+        argvPtr = argv;
+    
         for (int I = 0; I < argc; I++) {
-            if (strcmp(argv[I],"--help" ) == 0) {
+            if (strcmp(*argvPtr,"--help" ) == 0) {
                 printHelpMessage();             
-            } else if (strcmp(argv[I],"--version" ) == 0) {
+            } else if (strcmp(*argvPtr,"--version" ) == 0) {
                 printVersion();             
-            } else if (strcmp(argv[I],"--file" ) == 0) {
-                I++;
-                if (I < argc){
-                    inputFilename = argv[I];
-                }
-            } else if (strcmp(argv[I],"--width" ) == 0) {
-                I++;
-                if (I < argc){
-                    width =  atoi(argv[I]);
+            } else if (strcmp(*argvPtr,"--file" ) == 0) {
+                if (++I < argc) inputFilename = *(++argvPtr);
+            } else if (strcmp(*argvPtr,"--width" ) == 0) {
+                if (++I < argc) width = atoi(*(++argvPtr));
+            } else if (strcmp(*argvPtr,"--depth" ) == 0) {
+                if (++I < argc) depth =  atoi(*(++argvPtr));
+            } else if (strcmp(*argvPtr,"--out" ) == 0) {
+                if (++I < argc) {
+                    outputFilename = malloc(strlen(*(++argvPtr)));
+                    strcpy(outputFilename, *argvPtr);
                 }                
-            } else if (strcmp(argv[I],"--depth" ) == 0) {
-                I++;
-                if (I < argc){
-                    depth =  atoi(argv[I]);
-                }                
-            } else if (strcmp(argv[I],"--out" ) == 0) {
-                I++;
-                if (I < argc){
-                    outputFilename = malloc(strlen(argv[I]));
-                    strcpy(outputFilename, argv[I]);
-                }                
-            } else if (strcmp(argv[I],"--big" ) == 0) {
-                I++;
+            } else if (strcmp(*argvPtr,"--big" ) == 0) {
                 big = 1;
             }
+            argvPtr++;
         }
     } else {
         printHelpMessage();
